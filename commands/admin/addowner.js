@@ -1,4 +1,3 @@
-// commands/admin/addowner.js
 const { addOwner, isOwner } = require('../../utils/database/ownerManager');
 require('dotenv').config();
 

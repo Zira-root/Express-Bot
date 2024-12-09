@@ -1,23 +1,83 @@
-// commands/admin/set.js
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getSettings, updateSettings, defaultSettings } = require('../../utils/database/guildSettingsManager');
+const { checkPermission } = require('../../utils/database/permissionManager');
 
 module.exports = {
     name: 'set',
     description: 'Configure les paramètres du bot',
     usage: '<prefix|color>',
     async execute(message, args) {
-        if (!message.member.permissions.has('ADMINISTRATOR')) {
-            return message.reply('Vous devez être administrateur pour utiliser cette commande.');
-        }
-
-        if (!args[0]) {
-            return message.reply(`Utilisation: ${defaultSettings.prefix}set <prefix|color>`);
+        const hasPermission = await checkPermission(message.member, 2);
+        if (!hasPermission) {
+            return message.reply('Vous n\'avez pas la permission d\'utiliser cette commande.');
         }
 
         const settings = await getSettings(message.guild.id);
-        const subCommand = args[0].toLowerCase();
 
+        // Si aucun argument n'est fourni, afficher le menu principal
+        if (!args[0]) {
+            const mainEmbed = new EmbedBuilder()
+                .setColor(settings.embedColor)
+                .setTitle('⚙️ Configuration du Bot')
+                .setDescription('Voici les paramètres que vous pouvez configurer:')
+                .addFields(
+                    { 
+                        name: '🔧 Préfixe', 
+                        value: `- \`${settings.prefix}set prefix\`\n- Modifie le préfixe des commandes du bot\n- Valeur actuelle: \`${settings.prefix}\``,
+                        inline: false 
+                    },
+                    { 
+                        name: '🎨 Couleur', 
+                        value: `- \`${settings.prefix}set color\`\n- Modifie la couleur des embeds du bot\n- Valeur actuelle: \`${settings.embedColor}\``,
+                        inline: false 
+                    }
+                )
+                .setFooter({ text: `Utilisez \`${settings.prefix}set <option>\` pour configurer un paramètre.` })
+                .setTimestamp();
+
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('configure_prefix')
+                        .setLabel('Configurer le préfixe')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setEmoji('🔧'),
+                    new ButtonBuilder()
+                        .setCustomId('configure_color')
+                        .setLabel('Configurer la couleur')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setEmoji('🎨')
+                );
+
+            const response = await message.reply({ embeds: [mainEmbed], components: [row] });
+
+            // Collecteur pour les boutons du menu principal
+            const collector = response.createMessageComponentCollector({
+                filter: i => i.user.id === message.author.id,
+                time: 60000
+            });
+
+            collector.on('collect', async i => {
+                if (i.customId === 'configure_prefix') {
+                    await handlePrefix(message, settings);
+                    await i.update({ components: [] });
+                } else if (i.customId === 'configure_color') {
+                    await handleColor(message, settings);
+                    await i.update({ components: [] });
+                }
+            });
+
+            collector.on('end', async () => {
+                if (response.editable) {
+                    row.components.forEach(button => button.setDisabled(true));
+                    await response.edit({ components: [row] }).catch(() => {});
+                }
+            });
+
+            return;
+        }
+
+        const subCommand = args[0].toLowerCase();
         switch (subCommand) {
             case 'prefix':
                 await handlePrefix(message, settings);
@@ -26,7 +86,7 @@ module.exports = {
                 await handleColor(message, settings);
                 break;
             default:
-                message.reply('Option invalide. Utilisez "prefix" ou "color".');
+                message.reply('> - `❌` Option invalide. Utilisez "prefix" ou "color".');
         }
     }
 };

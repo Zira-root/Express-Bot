@@ -49,11 +49,12 @@ function formatBytes(bytes) {
 
 module.exports = {
     name: 'ready',
+    description: 'Affiche des informations lors du démarrage du bot',
     once: true,
     async execute(client) {
         // Affichage stylé du nom du bot
         figlet(client.user.username, {
-            font: 'Big',
+            font: 'Elite',
             horizontalLayout: 'default',
             verticalLayout: 'default'
         }, (err, data) => {
@@ -63,8 +64,9 @@ module.exports = {
             }
             
             // Logo et bannière
+            console.log('\n' + colors.bright.white + '═'.repeat(80) + colors.reset);
             console.log('\n' + colors.bright.cyan + data + colors.reset);
-            console.log('\n' + colors.bright.white + '='.repeat(80) + '\n' + colors.reset);
+            console.log('\n' + colors.bright.white + '═'.repeat(80) + '\n' + colors.reset);
             
             // Informations du bot
             console.log(colors.bold + colors.bright.magenta + '⭐ INFORMATIONS DU BOT' + colors.reset);
@@ -77,17 +79,18 @@ module.exports = {
             console.log(colors.bold + colors.bright.cyan + '🖥️  STATISTIQUES SYSTÈME' + colors.reset);
             console.log(colors.bright.blue + `┌─ 💻 Plateforme: ${colors.white}${process.platform}`);
             console.log(colors.bright.blue + `├─ 🧮 Mémoire: ${colors.white}${formatBytes(process.memoryUsage().heapUsed)}`);
-            console.log(colors.bright.blue + `├─ ⚙️ CPU: ${colors.white}${os.cpus()[0].model}`);
+            console.log(colors.bright.blue + `├─ ⚙️  CPU: ${colors.white}${os.cpus()[0].model}`);
             console.log(colors.bright.blue + `└─ 🕒 Uptime: ${colors.white}${formatUptime(client.uptime)}\n`);
             
             // Versions
             console.log(colors.bold + colors.bright.yellow + '📦 VERSIONS' + colors.reset);
             console.log(colors.bright.yellow + `┌─ Node.js: ${colors.white}${process.version}`);
             console.log(colors.bright.yellow + `├─ Discord.js: ${colors.white}v${djsversion}`);
-            console.log(colors.bright.yellow + `└─ Bot: ${colors.white}v1.0.0\n`);
+            console.log(colors.bright.yellow + `├─ Bot: ${colors.white}v1.0.0`);
+            console.log(colors.bright.yellow + `└─ Author: ${colors.white}Zira | zira.off` + colors.reset + '\n');
             
             // Ligne de séparation finale
-            console.log(colors.bright.white + '='.repeat(80) + colors.reset + '\n');
+            console.log(colors.bright.white + '═'.repeat(80) + colors.reset + '\n');
         });
 
         // Système de statut rotatif amélioré
@@ -97,7 +100,7 @@ module.exports = {
             { name: `${client.users.cache.size} utilisateurs`, type: ActivityType.Watching },
             { name: 'version 1.0.0 | /info', type: ActivityType.Playing },
             { name: 'développé avec ❤️', type: ActivityType.Playing },
-            { name: `Ping: ${client.ws.ping}ms`, type: ActivityType.Competing }
+            { name: `Ping : ${client.ws.ping}ms`, type: ActivityType.Competing }
         ];
 
         let i = 0;

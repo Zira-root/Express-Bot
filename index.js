@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Client, IntentsBitField, Collection } = require('discord.js');
-const CommandHandler = require('./utils/handlers/CommandHandler');
-const EventHandler = require('./utils/handlers/EventHandler');
+const CommandHandler = require('./handlers/CommandHandler');
+const EventHandler = require('./handlers/EventHandler');
 const mongoose = require('mongoose');
 
 const client = new Client({

@@ -1,4 +1,3 @@
-// utils/database/ownerManager.js
 const mongoose = require('mongoose');
 
 // Schéma Owner

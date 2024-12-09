@@ -1,56 +1,95 @@
-const mongoose = require('mongoose');
+const { PermissionFlagsBits } = require('discord.js');
+const Permission = require('./schema/permissionSchema');
 
-// Schéma pour les permissions des commandes
-const commandPermissionSchema = new mongoose.Schema({
-    commandName: { type: String, required: true, unique: true },
-    permissionLevel: { type: Number, default: 0, min: 0, max: 2 },
-    updatedAt: { type: Date, default: Date.now }
-});
-
-const CommandPermission = mongoose.model('CommandPermission', commandPermissionSchema);
-
-// Fonction pour mettre à jour la permission d'une commande
-async function updateCommandPermission(commandName, permissionLevel) {
+/**
+ * Récupère les rôles configurés pour un niveau de permission
+ * @param {string} guildId - ID du serveur
+ * @param {number} level - Niveau de permission (0, 1, 2)
+ * @returns {Promise<string[]>} Liste des IDs des rôles
+ */
+async function getLevelRoles(guildId, level) {
     try {
-        const permission = await CommandPermission.findOneAndUpdate(
-            { commandName },
-            { 
-                commandName,
-                permissionLevel,
-                updatedAt: Date.now()
-            },
-            { upsert: true, new: true }
-        );
-        return permission;
+        const permission = await Permission.findOne({ guildId, level });
+        return permission ? permission.roleIds : [];
     } catch (error) {
-        console.error('Erreur lors de la mise à jour de la permission:', error);
+        console.error('Erreur lors de la récupération des rôles:', error);
+        return [];
+    }
+}
+
+/**
+ * Récupère tous les niveaux de permission et leurs rôles pour un serveur
+ * @param {string} guildId - ID du serveur
+ * @returns {Promise<Object>} Objet contenant les rôles par niveau
+ */
+async function getAllLevelRoles(guildId) {
+    try {
+        const permissions = await Permission.find({ guildId });
+        const roles = {
+            0: [],
+            1: [],
+            2: []
+        };
+
+        permissions.forEach(perm => {
+            roles[perm.level] = perm.roleIds;
+        });
+
+        return roles;
+    } catch (error) {
+        console.error('Erreur lors de la récupération des permissions:', error);
+        return { 0: [], 1: [], 2: [] };
+    }
+}
+
+/**
+ * Met à jour les rôles pour un niveau de permission
+ * @param {string} guildId - ID du serveur
+ * @param {number} level - Niveau de permission (0, 1, 2)
+ * @param {string[]} roleIds - Liste des IDs des rôles
+ * @returns {Promise<void>}
+ */
+async function updateLevelRoles(guildId, level, roleIds) {
+    try {
+        await Permission.findOneAndUpdate(
+            { guildId, level },
+            { 
+                $set: { 
+                    roleIds,
+                    updatedAt: new Date()
+                }
+            },
+            { upsert: true }
+        );
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour des rôles:', error);
         throw error;
     }
 }
 
-// Fonction pour obtenir le niveau de permission d'une commande
-async function getCommandPermission(commandName) {
+/**
+ * Vérifie si un membre a accès à un niveau de permission
+ * @param {Object} member - Membre Discord
+ * @param {number} level - Niveau de permission à vérifier
+ * @returns {Promise<boolean>}
+ */
+async function checkPermission(member, level) {
     try {
-        const permission = await CommandPermission.findOne({ commandName });
-        return permission ? permission.permissionLevel : 0; // 0 par défaut si non trouvé
-    } catch (error) {
-        console.error('Erreur lors de la récupération de la permission:', error);
-        return 0;
-    }
-}
+        // Les admins ont toujours accès
+        if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
 
-// Fonction pour vérifier si un utilisateur a la permission d'utiliser une commande
-async function checkPermission(userId, commandName) {
-    try {
-        // Vérifier si l'utilisateur est l'owner principal
-        if (userId === process.env.OWNER_ID) return true;
+        const permission = await Permission.findOne({ 
+            guildId: member.guild.id,
+            level
+        });
 
-        // Récupérer le niveau de permission requis pour la commande
-        const requiredLevel = await getCommandPermission(commandName);
+        // Si aucun rôle n'est configuré pour ce niveau
+        if (!permission || !permission.roleIds.length) {
+            return level === 0; // Niveau 0 accessible à tous par défaut
+        }
 
-        // TODO: Ajouter ici la logique pour vérifier le niveau de l'utilisateur
-        // Pour l'instant, on retourne true pour test
-        return true;
+        // Vérifie si le membre a un des rôles configurés
+        return member.roles.cache.some(role => permission.roleIds.includes(role.id));
     } catch (error) {
         console.error('Erreur lors de la vérification des permissions:', error);
         return false;
@@ -58,8 +97,8 @@ async function checkPermission(userId, commandName) {
 }
 
 module.exports = {
-    CommandPermission,
-    updateCommandPermission,
-    getCommandPermission,
+    getLevelRoles,
+    getAllLevelRoles,
+    updateLevelRoles,
     checkPermission
 };
