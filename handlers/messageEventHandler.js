@@ -43,12 +43,29 @@ module.exports = {
 
             // Exécuter la commande
             await command.execute(message, args);
+
+            await sendLog(message.guild, 'COMMANDS', {
+                action: 'USE',
+                user: message.author,
+                command: commandName,
+                channel: message.channel,
+                id: message.id
+            });
+            
         } catch (error) {
             console.error('Erreur lors de l\'exécution de la commande:', error);
             message.reply({
                 content: 'Une erreur est survenue lors de l\'exécution de cette commande.',
                 allowedMentions: { repliedUser: false }
             }).catch(console.error);
+
+            await sendLog(message.guild, 'COMMANDS', {
+                action: 'ERROR',
+                user: message.author,
+                command: commandName,
+                error: error.message,
+                id: message.id
+            });
         }
     },
 

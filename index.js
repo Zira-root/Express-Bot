@@ -9,7 +9,11 @@ const client = new Client({
         IntentsBitField.Flags.Guilds,
         IntentsBitField.Flags.GuildMessages,
         IntentsBitField.Flags.GuildMembers,
-        IntentsBitField.Flags.MessageContent
+        IntentsBitField.Flags.GuildBans,
+        IntentsBitField.Flags.GuildEmojisAndStickers,
+        IntentsBitField.Flags.GuildInvites,
+        IntentsBitField.Flags.MessageContent,
+        IntentsBitField.Flags.GuildModeration
     ]
 });
 
